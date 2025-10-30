@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MediConnect — Find Medicines Nearby</title>
+  <meta name="description" content="MediConnect — find authentic medicines in nearby verified pharmacies. Search by drug name, compare price and call or WhatsApp the pharmacy."/>
+  <style>
+    /* --- Basic reset & layout --- */
+    :root{
+      --brand:#0b84ff;
+      --muted:#666;
+      --card:#fff;
+      --bg:#f4f7fb;
+      --success:#28a745;
+      --danger:#dc3545;
+      --max-width:980px;
+      --radius:10px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#222}
+    .container{max-width:var(--max-width);margin:28px auto;padding:20px}
+    header{background:linear-gradient(90deg,var(--brand),#146ee5);color:#fff;padding:22px;border-radius:12px}
+    header h1{margin:0;font-size:1.6rem}
+    header p{margin:6px 0 0;opacity:0.95}
+    .search-card{background:var(--card);padding:18px;border-radius:12px;margin-top:16px;box-shadow:0 6px 18px rgba(16,33,56,0.06)}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    input[type="text"]{flex:1;padding:12px 14px;border-radius:8px;border:1px solid #d8e2f0}
+    button{background:var(--brand);color:#fff;border:none;padding:11px 16px;border-radius:8px;cursor:pointer}
+    button.secondary{background:#fff;border:1px solid #e6eefc;color:var(--brand)}
+    .filters{display:flex;gap:8px;align-items:center}
+    .small{font-size:0.9rem;color:var(--muted)}
+    /* results */
+    .results{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+    .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 16px rgba(16,33,56,0.05);position:relative}
+    .card h3{margin:0;font-size:1.05rem}
+    .meta{font-size:0.88rem;color:var(--muted);margin-top:6px}
+    .pill{display:inline-block;padding:6px 8px;border-radius:999px;font-size:0.8rem;margin-right:6px}
+    .verified{background:linear-gradient(90deg,#e6fbf1,#d8f7e6);color:var(--success);border:1px solid rgba(40,167,69,0.12)}
+    .price{font-weight:700;color:#0b3b91;margin-top:8px}
+    .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    .actions a{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;text-decoration:none;font-weight:600}
+    .call{background:#e8f5ff;color:var(--brand);border:1px solid rgba(11,132,255,0.12)}
+    .wa{background:#e9f7ee;color:var(--success);border:1px solid rgba(40,167,69,0.08)}
+    .map{background:#fff6e6;color:#9a6100;border:1px solid rgba(154,97,0,0.06)}
+    .no-results{text-align:center;padding:28px;background:linear-gradient(90deg,#fff,#fbfdff);border-radius:8px;color:var(--muted)}
+    footer{margin-top:26px;text-align:center;color:var(--muted);font-size:0.9rem}
+    code{background:#0b1223;color:#e6f0ff;padding:2px 6px;border-radius:6px;font-size:0.9rem}
+    /* responsiveness */
+    @media(max-width:640px){header h1{font-size:1.2rem}.row{flex-direction:column}.results{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>MediConnect</h1>
+      <p>Find authentic medicines from verified pharmacies in your area — fast and free. No account required.</p>
+    </header>
+
+    <div class="search-card" role="region" aria-labelledby="search-heading">
+      <div class="row" style="align-items:center">
+        <input id="drugInput" type="text" placeholder="Type drug name (e.g. Paracetamol, Amoxicillin)..." aria-label="Search drug">
+        <button id="searchBtn" onclick="searchDrug()">Search</button>
+        <button class="secondary" onclick="resetSample()">Reset</button>
+      </div>
+      <div class="row filters" style="margin-top:12px;justify-content:space-between">
+        <div class="small">Showing public results. Pharmacies add/update stock after signing in.</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="small" for="verifiedOnly"><input id="verifiedOnly" type="checkbox"> Verified only</label>
+          <label class="small"><input id="nearbySort" type="checkbox"> Sort by nearest (demo)</label>
+        </div>
+      </div>
+    </div>
+
+    <section id="resultsArea" class="results" aria-live="polite" style="margin-top:16px">
+      <!-- cards injected here -->
+    </section>
+
+    <div id="noResults" class="no-results" style="display:none;margin-top:12px">
+      <div style="font-size:1.05rem">No pharmacies found for that drug.</div>
+      <div style="margin-top:8px">Try another name or <button onclick="requestDrug()" style="background:none;border:none;color:var(--brand);cursor:pointer">request it from nearby pharmacies</button>.</div>
+    </div>
+
+    <footer>
+      <div>Made with ?? for Nigeria — MediConnect MVP</div>
+      <div style="margin-top:8px;font-size:0.85rem">Demo data only. Replace with real API/backend for production.</div>
+    </footer>
+  </div>
+
+  <script>
+    /***** SAMPLE DATA (Demo) *****
+     Replace this with a call to your real backend (Firebase/Supabase/Node API).
+     Example later:
+       fetch('https://your-backend.onrender.com/api/search?drug=' + encodeURIComponent(drug))
+         .then(res => res.json()).then(renderResults)
+    ********************************/
+    const samplePharmacies = [
+      {
+        id: "p1",
+        name: "CityCare Pharmacy",
+        address: "Kano Main Road, Kano",
+        phone: "+2348030000001",
+        whatsapp: "+2348030000001",
+        verified: true,
+        drugs: [
+          { name: "Paracetamol", price: 500, stock: 24, nafdac: "A123" },
+          { name: "Amoxicillin", price: 800, stock: 6, nafdac: "B234" }
+        ],
+        lat: 11.9964, lon: 8.5167
+      },
+      {
+        id: "p2",
+        name: "HealthPlus Pharmacy",
+        address: "Sabon Gari Market",
+        phone: "+2348030000002",
+        whatsapp: "+2348030000002",
+        verified: false,
+        drugs: [
+          { name: "Paracetamol", price: 550, stock: 0, nafdac: "A123" },
+          { name: "Cough Syrup", price: 650, stock: 10, nafdac: "C789" }
+        ],
+        lat: 11.9950, lon: 8.5160
+      },
+      {
+        id: "p3",
+        name: "ZamZam Pharmacy",
+        address: "Dawakin Tofa Road",
+        phone: "+2348030000003",
+        whatsapp: "+2348030000003",
+        verified: true,
+        drugs: [
+          { name: "Amoxicillin", price: 780, stock: 18, nafdac: "B234" },
+          { name: "Paracetamol", price: 520, stock: 12, nafdac: "A123" }
+        ],
+        lat: 12.0000, lon: 8.5200
+      }
+    ];
+
+    // Utility: normalize string for search
+    function normalize(s){ return (s||"").toString().trim().toLowerCase(); }
+
+    // Main search function (client-side demo)
+    function searchDrug(){
+      const q = document.getElementById('drugInput').value;
+      const verifiedOnly = document.getElementById('verifiedOnly').checked;
+      const nearbySort = document.getElementById('nearbySort').checked;
+
+      if(!q || q.trim().length < 1){
+        alert('Please type a drug name to search.');
+        return;
+      }
+
+      // -- In production: replace with API call to your backend --
+      // Example:
+      // fetch('https://your-backend.onrender.com/api/search?drug=' + encodeURIComponent(q))
+      //   .then(r => r.json())
+      //   .then(data => renderResults(data));
+      // return;
+
+      const term = normalize(q);
+      let results = [];
+
+      // find pharmacies with the drug (case-insensitive)
+      samplePharmacies.forEach(ph => {
+        ph.drugs.forEach(d => {
+          if(normalize(d.name).includes(term)){
+            results.push({
+              pharmacyId: ph.id,
+              pharmacyName: ph.name,
+              address: ph.address,
+              phone: ph.phone,
+              whatsapp: ph.whatsapp,
+              verified: ph.verified,
+              lat: ph.lat, lon: ph.lon,
+              drug: d.name,
+              price: d.price,
+              stock: d.stock,
+              nafdac: d.nafdac
+            });
+          }
+        });
+      });
+
+      if(verifiedOnly) results = results.filter(r => r.verified);
+
+      // optional demo: sort by stock then price, or by nearest if geolocation is enabled
+      if(nearbySort && navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(pos => {
+          const {latitude, longitude} = pos.coords;
+          results.forEach(r => {
+            r.distance = distanceBetween(latitude, longitude, r.lat, r.lon);
+          });
+          results.sort((a,b) => a.distance - b.distance);
+          renderResults(results, q);
+        }, err => {
+          // if no permission, fallback sorting by price
+          results.sort((a,b) => (a.price||9999) - (b.price||9999));
+          renderResults(results, q);
+        });
+      } else {
+        // default sort: available first, then lowest price
+        results.sort((a,b) => {
+          const as = a.stock>0?0:1; const bs = b.stock>0?0:1;
+          if(as !== bs) return as - bs;
+          return (a.price||9999) - (b.price||9999);
+        });
+        renderResults(results, q);
+      }
+    }
+
+    function renderResults(items, q){
+      const area = document.getElementById('resultsArea');
+      const no = document.getElementById('noResults');
+      area.innerHTML = '';
+      if(!items || items.length === 0){
+        no.style.display = 'block';
+        return;
+      }
+      no.style.display = 'none';
+      items.forEach(it => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <h3>${escapeHtml(it.pharmacyName)} ${it.verified ? '<span class="pill verified">Verified ?</span>' : ''}</h3>
+              <div class="meta">${escapeHtml(it.address)}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="price">?${formatNumber(it.price || 'N/A')}</div>
+              <div class="meta" style="margin-top:6px">${it.stock>0 ? '<span style="color:var(--success)">In stock</span>' : '<span style="color:var(--danger)">Out of stock</span>'}</div>
+            </div>
+          </div>
+          <div class="meta" style="margin-top:10px">Medicine: <strong>${escapeHtml(it.drug)}</strong> • NAFDAC: <code>${escapeHtml(it.nafdac||'—')}</code></div>
+          <div class="actions" style="margin-top:12px">
+            <a class="call" href="tel:${cleanPhone(it.phone)}" title="Call ${escapeHtml(it.pharmacyName)}">?? Call</a>
+            <a class="wa" target="_blank" rel="noopener" href="${whatsappLink(it.whatsapp, `Hello, I need ${it.drug}. Is it available?`) }" title="WhatsApp ${escapeHtml(it.pharmacyName)}">?? WhatsApp</a>
+            <a class="map" target="_blank" rel="noopener" href="${googleMapsLink(it)}" title="Open location">??? Map</a>
+            <a style="margin-left:auto" href="#" onclick="copyDetails(event, ${JSON.stringify(escapeHtml(it.pharmacyName))}, ${JSON.stringify(escapeHtml(it.pharmacyId))});" title="Copy details">?? Copy</a>
+          </div>
+        `;
+        area.appendChild(div);
+      });
+    }
+
+    // small helpers
+    function escapeHtml(s){
+      if(!s) return '';
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function formatNumber(n){ return (n===undefined||n===null)?'N/A':String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+    function cleanPhone(p){ return (p||'').replace(/\s+/g,''); }
+    function whatsappLink(phone, text){
+      const num = cleanPhone(phone).replace(/^\+/, '');
+      return 'https://wa.me/' + encodeURIComponent(num) + '?text=' + encodeURIComponent(text || '');
+    }
+    function googleMapsLink(item){
+      // prefer lat/lon if present
+      if(item.lat && item.lon) return `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`;
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.pharmacyName)}`;
+    }
+    function copyDetails(e, pharmacyName, pharmacyId){
+      e.preventDefault();
+      const txt = `Pharmacy: ${pharmacyName}\nID: ${pharmacyId}`;
+      navigator.clipboard?.writeText(txt).then(()=> alert('Copied pharmacy details to clipboard.'));
+    }
+
+    // distance between two lat/lon - Haversine (km)
+    function distanceBetween(lat1, lon1, lat2, lon2){
+      if(!lat2 || !lon2) return 9999;
+      const R = 6371;
+      const dLat = toRad(lat2-lat1);
+      const dLon = toRad(lon2-lon1);
+      const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2)) * Math.sin(dLon/2)*Math.sin(dLon/2);
+      const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+    function toRad(v){ return v * Math.PI / 180; }
+
+    // Request drug (simple demo open email or Google Form)
+    function requestDrug(){
+      const drug = document.getElementById('drugInput').value || 'Not specified';
+      const subject = encodeURIComponent('MediConnect drug request: ' + drug);
+      const body = encodeURIComponent('Please notify pharmacies about this request: ' + drug + '\n\n(Replace with your request channel.)');
+      window.open(`mailto:admin@mediconnect.example.com?subject=${subject}&body=${body}`, '_blank');
+    }
+
+    // Reset demo
+    function resetSample(){
+      document.getElementById('drugInput').value = '';
+      document.getElementById('resultsArea').innerHTML = '';
+      document.getElementById('noResults').style.display = 'none';
+      document.getElementById('verifiedOnly').checked = false;
+      document.getElementById('nearbySort').checked = false;
+    }
+
+    // allow Enter key to search
+    document.getElementById('drugInput').addEventListener('keydown', function(e){
+      if(e.key === 'Enter') searchDrug();
+    ******************************************************/
+  </script>
+</body>
+</html>
