@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MediConnect — Find Medicines Nearby</title>
-  <meta name="description" content="MediConnect — find authentic medicines in nearby verified pharmacies. Search by drug name, compare price and call or WhatsApp the pharmacy."/>
+  <title>MediConnect â€” Find Medicines Nearby</title>
+  <meta name="description" content="MediConnect â€” find authentic medicines in nearby verified pharmacies. Search by drug name, compare price and call or WhatsApp the pharmacy."/>
   <style>
     /* --- Basic reset & layout --- */
     :root{
@@ -54,7 +54,7 @@
   <div class="container">
     <header>
       <h1>MediConnect</h1>
-      <p>Find authentic medicines from verified pharmacies in your area — fast and free. No account required.</p>
+      <p>Find authentic medicines from verified pharmacies in your area â€” fast and free. No account required.</p>
     </header>
 
     <div class="search-card" role="region" aria-labelledby="search-heading">
@@ -82,7 +82,7 @@
     </div>
 
     <footer>
-      <div>Made with ?? for Nigeria — MediConnect MVP</div>
+      <div>Made with ?? for Nigeria â€” MediConnect MVP</div>
       <div style="margin-top:8px;font-size:0.85rem">Demo data only. Replace with real API/backend for production.</div>
     </footer>
   </div>
@@ -231,7 +231,7 @@
               <div class="meta" style="margin-top:6px">${it.stock>0 ? '<span style="color:var(--success)">In stock</span>' : '<span style="color:var(--danger)">Out of stock</span>'}</div>
             </div>
           </div>
-          <div class="meta" style="margin-top:10px">Medicine: <strong>${escapeHtml(it.drug)}</strong> • NAFDAC: <code>${escapeHtml(it.nafdac||'—')}</code></div>
+          <div class="meta" style="margin-top:10px">Medicine: <strong>${escapeHtml(it.drug)}</strong> â€¢ NAFDAC: <code>${escapeHtml(it.nafdac||'â€”')}</code></div>
           <div class="actions" style="margin-top:12px">
             <a class="call" href="tel:${cleanPhone(it.phone)}" title="Call ${escapeHtml(it.pharmacyName)}">?? Call</a>
             <a class="wa" target="_blank" rel="noopener" href="${whatsappLink(it.whatsapp, `Hello, I need ${it.drug}. Is it available?`) }" title="WhatsApp ${escapeHtml(it.pharmacyName)}">?? WhatsApp</a>
@@ -300,4 +300,5 @@
     ******************************************************/
   </script>
 </body>
+
 </html>
