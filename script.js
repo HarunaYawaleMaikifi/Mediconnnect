@@ -9,7 +9,7 @@ function searchDrug() {
     return;
   }
 
-  // Demo result – you can connect real data later
+  // Demo result â€“ you can connect real data later
   const samplePharmacies = [
     { name: "CityCare Pharmacy", location: "Kano Main Road" },
     { name: "HealthPlus Pharmacy", location: "Sabon Gari" },
@@ -17,7 +17,7 @@ function searchDrug() {
 
   samplePharmacies.forEach((pharmacy) => {
     const li = document.createElement("li");
-    li.textContent = `${pharmacy.name} – ${pharmacy.location}`;
+    li.textContent = `${pharmacy.name} â€“ ${pharmacy.location}`;
     list.appendChild(li);
   });
 }
